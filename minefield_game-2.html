@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Минное поле</title>
+<style>
+  body{font-family:Arial,sans-serif;background:#17212b;color:#fff;text-align:center;margin:0;padding:20px}
+  h1{margin:10px 0}.info{margin:10px;font-size:18px}
+  #board{display:grid;grid-template-columns:repeat(8,42px);gap:4px;justify-content:center;margin:20px auto}
+  button.cell{width:42px;height:42px;border:0;border-radius:7px;background:#2b5278;color:#fff;font-size:20px;font-weight:bold}
+  button.cell:hover{background:#3a6b99}
+  button.cell.open{background:#536878}
+  button.cell.mine{background:#b33a3a}
+  #restart{padding:10px 18px;border:0;border-radius:8px;font-size:16px}
+</style>
+</head>
+<body>
+<h1>💣 Минное поле</h1>
+<div class="info">Мины: <span id="mines">10</span> | Осталось клеток: <span id="left">54</span></div>
+<div id="board"></div>
+<button id="restart">🔄 Новая игра</button>
+<script>
+const SIZE=8, MINES=10;
+let cells=[], gameOver=false;
+
+function start(){
+  gameOver=false;
+  cells=Array.from({length:SIZE*SIZE},()=>({mine:false,open:false,n:0}));
+  let placed=0;
+  while(placed<MINES){
+    const i=Math.floor(Math.random()*cells.length);
+    if(!cells[i].mine){cells[i].mine=true;placed++;}
+  }
+  for(let i=0;i<cells.length;i++){
+    if(cells[i].mine) continue;
+    let n=0,r=Math.floor(i/SIZE),c=i%SIZE;
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+      if(!dr&&!dc)continue;
+      let rr=r+dr,cc=c+dc;
+      if(rr>=0&&rr<SIZE&&cc>=0&&cc<SIZE&&cells[rr*SIZE+cc].mine)n++;
+    }
+    cells[i].n=n;
+  }
+  render();
+}
+function openCell(i){
+  if(gameOver||cells[i].open)return;
+  cells[i].open=true;
+  if(cells[i].mine){gameOver=true; cells.forEach(x=>x.open=true); render(); setTimeout(()=>alert("💥 Бум! Попробуй ещё раз."),50); return;}
+  if(cells[i].n===0){
+    const r=Math.floor(i/SIZE),c=i%SIZE;
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+      let rr=r+dr,cc=c+dc;
+      if(rr>=0&&rr<SIZE&&cc>=0&&cc<SIZE) openCell(rr*SIZE+cc);
+    }
+  }
+  const safe=cells.filter(x=>!x.mine);
+  if(safe.every(x=>x.open)){gameOver=true; setTimeout(()=>alert("🎉 Победа!"),50);}
+  render();
+}
+function render(){
+  const board=document.getElementById("board"); board.innerHTML="";
+  cells.forEach((x,i)=>{
+    const b=document.createElement("button"); b.className="cell";
+    if(x.open){
+      b.classList.add(x.mine?"mine":"open");
+      b.textContent=x.mine?"💣":(x.n||"");
+    }
+    b.onclick=()=>openCell(i); board.appendChild(b);
+  });
+  document.getElementById("left").textContent=cells.filter(x=>!x.open).length;
+}
+document.getElementById("restart").onclick=start;
+start();
+</script>
+</body>
+</html>
